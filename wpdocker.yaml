@@ -1,0 +1,344 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftNewApp
+    creationTimestamp: null
+    labels:
+      app: wpdocker
+    name: php
+  spec:
+    tags:
+    - annotations:
+        openshift.io/imported-from: php:5.6-apache
+      from:
+        kind: DockerImage
+        name: php:5.6-apache
+      generation: null
+      importPolicy: {}
+      name: 5.6-apache
+  status:
+    dockerImageRepository: ""
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftNewApp
+    creationTimestamp: null
+    labels:
+      app: wpdocker
+    name: wpdocker
+  spec: {}
+  status:
+    dockerImageRepository: ""  
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    creationTimestamp: null
+    labels:
+      name: mysql
+    name: mysql-pvclaim
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 3Gi
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    creationTimestamp: null
+    labels:
+      name: html
+    name: html-pvclaim
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 12Gi
+- apiVersion: v1
+  data:
+    password: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    username: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  kind: Secret
+  metadata:
+    creationTimestamp: null
+    name: mysecret
+  type: Opaque
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftNewApp
+    creationTimestamp: null
+    labels:
+      app: mysql
+    name: mysql
+  spec:
+    replicas: 1
+    selector:
+      app: mysql
+      deploymentconfig: mysql
+    strategy:
+      resources: {}
+    template:
+      metadata:
+        annotations:
+          openshift.io/container.mysql.image.entrypoint: '["container-entrypoint","run-mysqld"]'
+          openshift.io/generated-by: OpenShiftNewApp
+        creationTimestamp: null
+        labels:
+          app: mysql
+          deploymentconfig: mysql
+      spec:
+        containers:
+        - image: openshift/mysql:5.6
+          env:
+          - name: MYSQL_USER
+            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+          - name: MYSQL_PASSWORD
+            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+          - name: MYSQL_DATABASE
+            value: sampledb
+          - name: WORDPRESS_DB_HOST
+            value: mysql
+          - name: WORDPRESS_DB_PASSWORD
+            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+          - name: WORDPRESS_DB_NAME
+            value: sampledb
+          - name: WORDPRESS_DB_USER
+            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX        
+          name: mysql
+          ports:
+          - containerPort: 3306
+            protocol: TCP
+          resources: {}
+          volumeMounts:
+          - mountPath: /var/lib/mysql/data
+            name: mysql-volume-1
+        volumes:
+        - name: mysql-volume-1
+          persistentVolumeClaim:
+            claimName: mysql-pvclaim
+    test: false
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - mysql
+        from:
+          kind: ImageStreamTag
+          name: mysql:5.6
+          namespace: openshift
+      type: ImageChange
+  status: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftNewApp
+    creationTimestamp: null
+    labels:
+      app: mysql
+    name: mysql
+  spec:
+    ports:
+    - name: 3306-tcp
+      port: 3306
+      protocol: TCP
+      targetPort: 3306
+    selector:
+      app: mysql
+      deploymentconfig: mysql
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftNewApp
+    creationTimestamp: null
+    labels:
+      app: wpdocker
+    name: wpdocker
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: wpdocker:latest
+    source:        
+      git:
+        uri: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+        ref: master
+        httpProxy: 'http://proxy-gin.internal.fr:3128'
+        httpsProxy: 'https://proxy-gin.internal.fr:3128'
+      type: Git
+      sourceSecret:
+        name: mysecret
+    strategy:
+      dockerStrategy:
+        from:
+          kind: ImageStreamTag
+          name: php:5.6-apache
+        env:
+        - name: HTTPS_PROXY
+          value: http://192.168.200.5:3128
+        - name: HTTP_PROXY
+          value: http://192.168.200.5:3128
+        - name: http_proxy
+          value: http://192.168.200.5:3128
+        - name: https_proxy
+          value: http://192.168.200.5:3128          
+      type: Docker
+    triggers:
+    - github:
+        secret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+      type: GitHub
+    - generic:
+        secret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+      type: Generic
+    - type: ConfigChange
+    - imageChange: {}
+      type: ImageChange
+  status: {}
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftNewApp
+    creationTimestamp: null
+    labels:
+      app: wpdocker
+    name: wpdocker
+  spec:
+    replicas: 1
+    selector:
+      app: wpdocker
+      deploymentconfig: wpdocker
+    strategy:
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        annotations:
+          openshift.io/container.wpdocker.image.entrypoint: '["apache2-foreground"]'
+          openshift.io/generated-by: OpenShiftNewApp
+        creationTimestamp: null
+        labels:
+          app: wpdocker
+          deploymentconfig: wpdocker
+      spec:
+        containers:
+        - env:
+          - name: MYSQL_USER
+            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+          - name: MYSQL_PASSWORD
+            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+          - name: MYSQL_DATABASE
+            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+          - name: WORDPRESS_DB_HOST
+            value: mysql
+          - name: WORDPRESS_DB_PASSWORD
+            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+          - name: WORDPRESS_DB_NAME
+            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+          - name: WORDPRESS_DB_USER
+            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+          image: library/wpdocker:latest
+          imagePullPolicy: Always
+          name: wpdocker
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          volumeMounts:
+          - mountPath: /var/www/html
+            name: volume-html
+          - mountPath: /var/lock/apache2
+            name: volume-lock
+          - mountPath: /var/log/apache2
+            name: volume-log
+          - mountPath: /var/run/apache2
+            name: volume-run
+          - mountPath: /var/run/sshd
+            name: volume-sshd           
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - name: volume-html
+          persistentVolumeClaim:
+            claimName: html-pvclaim
+        - emptyDir: {}
+          name: volume-lock
+        - emptyDir: {}
+          name: volume-log
+        - emptyDir: {}
+          name: volume-run
+        - emptyDir: {}
+          name: volume-sshd          
+    test: false
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - wpdocker
+        from:
+          kind: ImageStreamTag
+          name: wpdocker:latest
+      type: ImageChange
+  status: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      openshift.io/generated-by: OpenShiftNewApp
+    creationTimestamp: null
+    labels:
+      app: wpdocker
+    name: wpdocker
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      app: wpdocker
+      deploymentconfig: wpdocker
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Route
+  metadata:
+    annotations:
+      openshift.io/host.generated: "true"
+    creationTimestamp: null
+    labels:
+      app: wpdocker
+    name: wpdocker
+  spec:
+    host: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    port:
+      targetPort: 8080
+    to:
+      kind: Service
+      name: wpdocker
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: Allow    
+kind: List
+metadata: {}  
