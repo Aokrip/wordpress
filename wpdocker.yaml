@@ -1,13 +1,17 @@
 apiVersion: v1
-items:
+kind: Template
+metadata:
+  annotations:
+    description: A ready to use WordPress
+    iconClass: icon-wordpress
+    tags: instant-app, wordpress, kermit
+  name: wordpress
+objects:
 - apiVersion: v1
   kind: ImageStream
   metadata:
-    annotations:
-      openshift.io/generated-by: OpenShiftNewApp
-    creationTimestamp: null
     labels:
-      app: wpdocker
+      app: ${APPLICATION_NAME}
     name: php
   spec:
     tags:
@@ -16,30 +20,21 @@ items:
       from:
         kind: DockerImage
         name: php:5.6-apache
-      generation: null
       importPolicy: {}
       name: 5.6-apache
-  status:
-    dockerImageRepository: ""
 - apiVersion: v1
   kind: ImageStream
   metadata:
-    annotations:
-      openshift.io/generated-by: OpenShiftNewApp
-    creationTimestamp: null
     labels:
-      app: wpdocker
-    name: wpdocker
-  spec: {}
-  status:
-    dockerImageRepository: ""  
+      app: ${APPLICATION_NAME}
+    name: ${APPLICATION_NAME}
 - apiVersion: v1
   kind: PersistentVolumeClaim
   metadata:
     creationTimestamp: null
     labels:
       name: mysql
-    name: mysql-pvclaim
+    name: ${APPLICATION_NAME}-mysql-pvclaim
   spec:
     accessModes:
     - ReadWriteOnce
@@ -52,22 +47,13 @@ items:
     creationTimestamp: null
     labels:
       name: html
-    name: html-pvclaim
+    name: ${APPLICATION_NAME}-html-pvclaim
   spec:
     accessModes:
     - ReadWriteOnce
     resources:
       requests:
         storage: 12Gi
-- apiVersion: v1
-  data:
-    password: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    username: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  kind: Secret
-  metadata:
-    creationTimestamp: null
-    name: mysecret
-  type: Opaque
 - apiVersion: v1
   kind: DeploymentConfig
   metadata:
@@ -88,8 +74,6 @@ items:
       metadata:
         annotations:
           openshift.io/container.mysql.image.entrypoint: '["container-entrypoint","run-mysqld"]'
-          openshift.io/generated-by: OpenShiftNewApp
-        creationTimestamp: null
         labels:
           app: mysql
           deploymentconfig: mysql
@@ -98,19 +82,19 @@ items:
         - image: openshift/mysql:5.6
           env:
           - name: MYSQL_USER
-            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+            value: ${MYSQL_USER}
           - name: MYSQL_PASSWORD
-            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+            value: ${MYSQL_PASSWORD}
           - name: MYSQL_DATABASE
-            value: sampledb
+            value: ${MYSQL_DATABASE}
           - name: WORDPRESS_DB_HOST
             value: mysql
           - name: WORDPRESS_DB_PASSWORD
-            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+            value: ${MYSQL_PASSWORD}
           - name: WORDPRESS_DB_NAME
-            value: sampledb
+            value: ${MYSQL_DATABASE}
           - name: WORDPRESS_DB_USER
-            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX        
+            value: ${MYSQL_USER}  
           name: mysql
           ports:
           - containerPort: 3306
@@ -122,7 +106,7 @@ items:
         volumes:
         - name: mysql-volume-1
           persistentVolumeClaim:
-            claimName: mysql-pvclaim
+            claimName: ${APPLICATION_NAME}-mysql-pvclaim
     test: false
     triggers:
     - type: ConfigChange
@@ -163,22 +147,22 @@ items:
       openshift.io/generated-by: OpenShiftNewApp
     creationTimestamp: null
     labels:
-      app: wpdocker
-    name: wpdocker
+      app: ${APPLICATION_NAME}
+    name: ${APPLICATION_NAME}
   spec:
     output:
       to:
         kind: ImageStreamTag
-        name: wpdocker:latest
+        name: ${APPLICATION_NAME}:latest
     source:        
       git:
-        uri: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+        uri: ${FORGE_REPOSITORY_URL}
         ref: master
         httpProxy: 'http://proxy-gin.internal.fr:3128'
         httpsProxy: 'https://proxy-gin.internal.fr:3128'
       type: Git
       sourceSecret:
-        name: mysecret
+        name: ${FORGE_SECRET_NAME}
     strategy:
       dockerStrategy:
         from:
@@ -186,20 +170,20 @@ items:
           name: php:5.6-apache
         env:
         - name: HTTPS_PROXY
-          value: http://192.168.200.5:3128
+          value: http://proxy-internet.internal.fr:3128
         - name: HTTP_PROXY
-          value: http://192.168.200.5:3128
+          value: http://proxy-internet.internal.fr:3128
         - name: http_proxy
-          value: http://192.168.200.5:3128
+          value: http://proxy-internet.internal.fr:3128
         - name: https_proxy
-          value: http://192.168.200.5:3128          
+          value: http://proxy-internet.internal.fr:3128        
       type: Docker
     triggers:
     - github:
-        secret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+        secret: ${WEBHOOK_SECRET}
       type: GitHub
     - generic:
-        secret: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+        secret: ${WEBHOOK_SECRET}
       type: Generic
     - type: ConfigChange
     - imageChange: {}
@@ -212,13 +196,13 @@ items:
       openshift.io/generated-by: OpenShiftNewApp
     creationTimestamp: null
     labels:
-      app: wpdocker
-    name: wpdocker
+      app: ${APPLICATION_NAME}
+    name: ${APPLICATION_NAME}
   spec:
     replicas: 1
     selector:
-      app: wpdocker
-      deploymentconfig: wpdocker
+      app: ${APPLICATION_NAME}
+      deploymentconfig: ${APPLICATION_NAME}
     strategy:
       resources: {}
       rollingParams:
@@ -231,32 +215,32 @@ items:
     template:
       metadata:
         annotations:
-          openshift.io/container.wpdocker.image.entrypoint: '["apache2-foreground"]'
+          openshift.io/container.${APPLICATION_NAME}.image.entrypoint: '["apache2-foreground"]'
           openshift.io/generated-by: OpenShiftNewApp
         creationTimestamp: null
         labels:
-          app: wpdocker
-          deploymentconfig: wpdocker
+          app: ${APPLICATION_NAME}
+          deploymentconfig: ${APPLICATION_NAME}
       spec:
         containers:
         - env:
           - name: MYSQL_USER
-            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+            value: ${MYSQL_USER}
           - name: MYSQL_PASSWORD
-            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+            value: ${MYSQL_PASSWORD}
           - name: MYSQL_DATABASE
-            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+            value: ${MYSQL_DATABASE}
           - name: WORDPRESS_DB_HOST
             value: mysql
           - name: WORDPRESS_DB_PASSWORD
-            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+            value: ${MYSQL_PASSWORD}
           - name: WORDPRESS_DB_NAME
-            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+            value: ${MYSQL_DATABASE}
           - name: WORDPRESS_DB_USER
-            value: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-          image: library/wpdocker:latest
+            value: ${MYSQL_USER}
+          image: library/${APPLICATION_NAME}:latest
           imagePullPolicy: Always
-          name: wpdocker
+          name: ${APPLICATION_NAME}
           ports:
           - containerPort: 8080
             protocol: TCP
@@ -280,7 +264,7 @@ items:
         volumes:
         - name: volume-html
           persistentVolumeClaim:
-            claimName: html-pvclaim
+            claimName: ${APPLICATION_NAME}-html-pvclaim
         - emptyDir: {}
           name: volume-lock
         - emptyDir: {}
@@ -295,10 +279,10 @@ items:
     - imageChangeParams:
         automatic: true
         containerNames:
-        - wpdocker
+        - ${APPLICATION_NAME}
         from:
           kind: ImageStreamTag
-          name: wpdocker:latest
+          name: ${APPLICATION_NAME}:latest
       type: ImageChange
   status: {}
 - apiVersion: v1
@@ -308,8 +292,8 @@ items:
       openshift.io/generated-by: OpenShiftNewApp
     creationTimestamp: null
     labels:
-      app: wpdocker
-    name: wpdocker
+      app: ${APPLICATION_NAME}
+    name: ${APPLICATION_NAME}
   spec:
     ports:
     - name: 8080-tcp
@@ -317,28 +301,66 @@ items:
       protocol: TCP
       targetPort: 8080
     selector:
-      app: wpdocker
-      deploymentconfig: wpdocker
+      app: ${APPLICATION_NAME}
+      deploymentconfig: ${APPLICATION_NAME}
   status:
     loadBalancer: {}
 - apiVersion: v1
   kind: Route
   metadata:
-    annotations:
-      openshift.io/host.generated: "true"
-    creationTimestamp: null
     labels:
-      app: wpdocker
-    name: wpdocker
+      app: ${APPLICATION_NAME}
+    name: ${APPLICATION_NAME}
   spec:
-    host: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     port:
       targetPort: 8080
     to:
       kind: Service
-      name: wpdocker
+      name: ${APPLICATION_NAME}
     tls:
       termination: edge
       insecureEdgeTerminationPolicy: Allow    
-kind: List
-metadata: {}  
+parameters:
+  -
+    description: "The name assigned to all of the objects defined in this template."
+    displayName: APPLICATION_NAME
+    name: APPLICATION_NAME
+    required: true
+    value: wpkmt
+  -
+    description: "The URL of your wordpress repository"
+    displayName: FORGE_REPOSITORY_URL
+    name: FORGE_REPOSITORY_URL
+    required: true
+    value: "https://www.forge.orange-labs.fr/plugins/git/kermit/openshiftv3/wordpress.git"
+  -
+    description: "Secret name with your Forge Credentials"
+    displayName: FORGE_SECRET_NAME
+    name: FORGE_SECRET_NAME
+    required: true
+    value: mysecret
+  -
+    description: "Username of database account"
+    displayName: MYSQL_USER
+    name: MYSQL_USER
+    required: true
+    value: dbuser
+  -
+    description: "Name of database"
+    displayName: MYSQL_DATABASE
+    name: MYSQL_DATABASE
+    required: true
+    value: wpkmtdb
+  -
+    description: "Password for database account"
+    displayName: MYSQL_PASSWORD
+    from: "[a-zA-Z0-9]{15}"
+    generate: expression
+    name: MYSQL_PASSWORD
+    required: true
+  -
+    description: "A secret string used to configure the Git webhook."
+    displayName: "Git Webhook Secret"
+    from: "[a-zA-Z0-9]{40}"
+    generate: expression
+    name: WEBHOOK_SECRET
