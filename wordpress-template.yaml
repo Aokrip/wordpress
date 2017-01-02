@@ -61,7 +61,7 @@ objects:
       openshift.io/generated-by: OpenShiftNewApp
     creationTimestamp: null
     labels:
-      app: mysql
+      app: wordpress
     name: mysql
   spec:
     replicas: 1
@@ -147,7 +147,7 @@ objects:
       openshift.io/generated-by: OpenShiftNewApp
     creationTimestamp: null
     labels:
-      app: ${APPLICATION_NAME}
+      app: wordpress
     name: ${APPLICATION_NAME}
   spec:
     output:
