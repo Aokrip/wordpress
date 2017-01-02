@@ -75,7 +75,7 @@ objects:
         annotations:
           openshift.io/container.mysql.image.entrypoint: '["container-entrypoint","run-mysqld"]'
         labels:
-          app: mysql
+          app: wordpress
           deploymentconfig: mysql
       spec:
         containers:
@@ -219,7 +219,7 @@ objects:
           openshift.io/generated-by: OpenShiftNewApp
         creationTimestamp: null
         labels:
-          app: ${APPLICATION_NAME}
+          app: wordpress
           deploymentconfig: ${APPLICATION_NAME}
       spec:
         containers:
