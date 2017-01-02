@@ -6,6 +6,8 @@ metadata:
     iconClass: icon-wordpress
     tags: instant-app, wordpress, kermit
   name: wordpress
+labels:
+  app: wordpress
 objects:
 - apiVersion: v1
   kind: ImageStream
