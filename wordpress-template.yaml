@@ -65,9 +65,6 @@ objects:
     name: mysql
   spec:
     replicas: 1
-    selector:
-      app: mysql
-      deploymentconfig: mysql
     strategy:
       resources: {}
     template:
@@ -200,9 +197,6 @@ objects:
     name: ${APPLICATION_NAME}
   spec:
     replicas: 1
-    selector:
-      app: ${APPLICATION_NAME}
-      deploymentconfig: ${APPLICATION_NAME}
     strategy:
       resources: {}
       rollingParams:
