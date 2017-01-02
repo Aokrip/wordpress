@@ -57,14 +57,14 @@ objects:
 - apiVersion: v1
   kind: DeploymentConfig
   metadata:
-    annotations:
-      openshift.io/generated-by: OpenShiftNewApp
-    creationTimestamp: null
     labels:
-      app: wordpress
+      app: mysql
     name: mysql
   spec:
     replicas: 1
+    selector:
+      app: mysql
+      deploymentconfig: mysql
     strategy:
       resources: {}
     template:
@@ -72,7 +72,7 @@ objects:
         annotations:
           openshift.io/container.mysql.image.entrypoint: '["container-entrypoint","run-mysqld"]'
         labels:
-          app: wordpress
+          app: mysql
           deploymentconfig: mysql
       spec:
         containers:
@@ -144,7 +144,7 @@ objects:
       openshift.io/generated-by: OpenShiftNewApp
     creationTimestamp: null
     labels:
-      app: wordpress
+      app: ${APPLICATION_NAME}
     name: ${APPLICATION_NAME}
   spec:
     output:
@@ -153,13 +153,9 @@ objects:
         name: ${APPLICATION_NAME}:latest
     source:        
       git:
-        uri: ${FORGE_REPOSITORY_URL}
+        uri: ${GIT_REPOSITORY_URL}
         ref: master
-        httpProxy: 'http://proxy-gin.internal.fr:3128'
-        httpsProxy: 'https://proxy-gin.internal.fr:3128'
       type: Git
-      sourceSecret:
-        name: ${FORGE_SECRET_NAME}
     strategy:
       dockerStrategy:
         from:
@@ -197,8 +193,10 @@ objects:
     name: ${APPLICATION_NAME}
   spec:
     replicas: 1
+    selector:
+      app: ${APPLICATION_NAME}
+      deploymentconfig: ${APPLICATION_NAME}
     strategy:
-      resources: {}
       rollingParams:
         intervalSeconds: 1
         maxSurge: 25%
@@ -213,7 +211,7 @@ objects:
           openshift.io/generated-by: OpenShiftNewApp
         creationTimestamp: null
         labels:
-          app: wordpress
+          app: ${APPLICATION_NAME}
           deploymentconfig: ${APPLICATION_NAME}
       spec:
         containers:
@@ -323,8 +321,8 @@ parameters:
     value: wpkmt
   -
     description: "The URL of your wordpress repository"
-    displayName: FORGE_REPOSITORY_URL
-    name: FORGE_REPOSITORY_URL
+    displayName: GIT_REPOSITORY_URL
+    name: GIT_REPOSITORY_URL
     required: true
     value: "https://github.com/cyril-dussert/wordpress.git"
   -
