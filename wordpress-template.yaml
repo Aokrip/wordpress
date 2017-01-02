@@ -332,13 +332,7 @@ parameters:
     displayName: FORGE_REPOSITORY_URL
     name: FORGE_REPOSITORY_URL
     required: true
-    value: "https://www.forge.orange-labs.fr/plugins/git/kermit/openshiftv3/wordpress.git"
-  -
-    description: "Secret name with your Forge Credentials"
-    displayName: FORGE_SECRET_NAME
-    name: FORGE_SECRET_NAME
-    required: true
-    value: mysecret
+    value: "https://github.com/cyril-dussert/wordpress.git"
   -
     description: "Username of database account"
     displayName: MYSQL_USER
