@@ -60,12 +60,12 @@ objects:
   kind: DeploymentConfig
   metadata:
     labels:
-      app: mysql
+      app: wordpress
     name: mysql
   spec:
     replicas: 1
     selector:
-      app: mysql
+      app: wordpress
       deploymentconfig: mysql
     strategy:
       resources: {}
@@ -74,7 +74,7 @@ objects:
         annotations:
           openshift.io/container.mysql.image.entrypoint: '["container-entrypoint","run-mysqld"]'
         labels:
-          app: mysql
+          app: wordpress
           deploymentconfig: mysql
       spec:
         containers:
@@ -191,12 +191,12 @@ objects:
       openshift.io/generated-by: OpenShiftNewApp
     creationTimestamp: null
     labels:
-      app: ${APPLICATION_NAME}
+      app: wordpress
     name: ${APPLICATION_NAME}
   spec:
     replicas: 1
     selector:
-      app: ${APPLICATION_NAME}
+      app: wordpress
       deploymentconfig: ${APPLICATION_NAME}
     strategy:
       rollingParams:
@@ -213,7 +213,7 @@ objects:
           openshift.io/generated-by: OpenShiftNewApp
         creationTimestamp: null
         labels:
-          app: ${APPLICATION_NAME}
+          app: wordpress
           deploymentconfig: ${APPLICATION_NAME}
       spec:
         containers:
