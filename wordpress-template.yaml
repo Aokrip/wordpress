@@ -326,7 +326,7 @@ parameters:
     displayName: GIT_REPOSITORY_URL
     name: GIT_REPOSITORY_URL
     required: true
-    value: "https://github.com/cyril-dussert/wordpress.git"
+    value: "https://github.com/orangekmt/wordpress.git"
   -
     description: "Username of database account"
     displayName: MYSQL_USER
